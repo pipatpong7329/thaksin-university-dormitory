@@ -1,0 +1,1819 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจองหอพักใกล้มหาวิทยาลัยทักษิณ (TSU Dorm Booking System)</title>
+    
+    <!-- Google Fonts (Prompt & Sarabun) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        tsu: {
+                            deep: '#1E3A8A',     /* Deep Slate Blue */
+                            blue: '#2563EB',     /* Royal Ocean Blue */
+                            sky: '#0284C7',      /* Vibrant Ocean Blue */
+                            gold: '#F59E0B',     /* Vibrant Gold Accent */
+                            yellow: '#EAB308',   /* Bright Accent Yellow */
+                            lightgold: '#FEF08A',/* Light Yellow Badge Background */
+                            slate: '#334155',    /* Slate Gray Dark */
+                            muted: '#64748B',    /* Slate Gray Muted */
+                            bg: '#F8FAFC'        /* Soft Background Gray */
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Prompt', 'Sarabun', 'sans-serif'],
+                        thai: ['Prompt', 'Sarabun', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Chart.js for Admin Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- SweetAlert2 for Modern Modals & Alerts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        body {
+            font-family: 'Prompt', 'Sarabun', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .gradient-tsu {
+            background: linear-gradient(135deg, #1E3A8A 0%, #0284C7 100%);
+        }
+        .gradient-gold {
+            background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+        }
+    </style>
+</head>
+<body class="h-full text-slate-800 bg-slate-50 flex flex-col custom-scrollbar">
+
+    <!-- TOP NOTICE & SECURITY BADGE BAR -->
+    <div class="bg-tsu-deep text-white text-xs py-2 px-4 flex flex-wrap justify-between items-center border-b border-blue-900/50">
+        <div class="flex items-center space-x-3">
+            <span class="bg-amber-500 text-slate-900 font-bold px-2 py-0.5 rounded text-[11px] shadow-sm">
+                <i class="fa-solid fa-graduation-cap mr-1"></i> มหาวิทยาลัยทักษิณ
+            </span>
+            <span class="hidden sm:inline text-blue-100">ระบบจองหอพักใกล้มหาวิทยาลัย (วิทยาเขตสงขลา & วิทยาเขตพัทลุง)</span>
+        </div>
+        <div class="flex items-center space-x-4 text-xs">
+            <span class="flex items-center text-emerald-400 font-medium">
+                <i class="fa-solid fa-shield-halved mr-1.5"></i> ถอดรหัส SHA-256 ปลอดภัย
+            </span>
+            <span class="text-slate-300">|</span>
+            <div class="flex items-center space-x-1 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700">
+                <span class="text-slate-300">บทบาท:</span>
+                <select id="roleSelector" onchange="switchRole(this.value)" class="bg-transparent text-amber-300 font-semibold focus:outline-none cursor-pointer">
+                    <option value="student" class="bg-slate-800 text-white">👨‍🎓 นักศึกษา (Student)</option>
+                    <option value="owner" class="bg-slate-800 text-white">🏢 เจ้าของหอพัก (Dorm Owner)</option>
+                    <option value="admin" class="bg-slate-800 text-white">🛡️ ผู้ดูแลระบบ (Admin)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN NAVBAR -->
+    <header class="bg-white sticky top-0 z-30 shadow-md border-b border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <!-- LOGO & BRAND -->
+                <div class="flex items-center space-x-3 cursor-pointer" onclick="navigateTo('search')">
+                    <div class="w-12 h-12 rounded-2xl gradient-tsu flex items-center justify-center text-white shadow-lg shadow-blue-500/20 transform hover:scale-105 transition">
+                        <i class="fa-solid fa-building-user text-2xl text-amber-300"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h1 class="text-xl font-bold text-tsu-deep tracking-tight">TSU DormBooking</h1>
+                            <span class="text-[10px] bg-tsu-lightgold text-amber-800 font-semibold px-2 py-0.5 rounded-full border border-amber-300">ม.ทักษิณ</span>
+                        </div>
+                        <p class="text-xs text-tsu-muted font-medium">ระบบค้นหาและจองหอพักใกล้มหาวิทยาลัยทักษิณ</p>
+                    </div>
+                </div>
+
+                <!-- DESKTOP NAVIGATION TABS -->
+                <nav id="desktopNav" class="hidden md:flex items-center space-x-1">
+                    <!-- Dynamic Navigation links rendered by JS -->
+                </nav>
+
+                <!-- USER AUTH STATUS & BUTTONS -->
+                <div class="flex items-center space-x-3">
+                    <div id="loggedOutState" class="flex items-center space-x-2">
+                        <button onclick="openLoginModal()" class="px-4 py-2 text-sm font-semibold text-tsu-deep hover:text-tsu-blue hover:bg-blue-50 rounded-xl transition">
+                            <i class="fa-solid fa-right-to-bracket mr-1"></i> เข้าสู่ระบบ
+                        </button>
+                        <button onclick="openRegisterModal()" class="px-4 py-2 text-sm font-semibold text-white gradient-tsu hover:opacity-90 rounded-xl shadow-md transition">
+                            <i class="fa-solid fa-user-plus mr-1"></i> สมัครสมาชิก
+                        </button>
+                    </div>
+
+                    <div id="loggedInState" class="hidden items-center space-x-3">
+                        <div class="flex items-center space-x-3 bg-slate-100 p-1.5 pr-3 rounded-xl border border-slate-200">
+                            <div class="w-9 h-9 rounded-lg bg-tsu-blue text-white flex items-center justify-center font-bold text-sm shadow">
+                                <span id="userAvatarText">นศ</span>
+                            </div>
+                            <div class="text-left hidden sm:block">
+                                <p id="userNameDisplay" class="text-xs font-bold text-slate-800 leading-tight">สมชาย ใจดี</p>
+                                <p id="userMaskedIdDisplay" class="text-[11px] text-tsu-muted">1-9012-XXXXX-88-1</p>
+                            </div>
+                        </div>
+                        <button onclick="logout()" title="ออกจากระบบ" class="px-3 py-2 text-xs font-bold text-rose-600 hover:text-white hover:bg-rose-600 bg-rose-50 rounded-xl border border-rose-200 transition">
+                            <i class="fa-solid fa-power-off"></i> <span class="hidden sm:inline ml-1">ออกจากระบบ</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ================= PAGE 1: STUDENT DORM SEARCH & LISTINGS ================= -->
+        <section id="view-search" class="space-y-6">
+            
+            <!-- HERO BANNER & CAMPUS SWITCHER -->
+            <div class="relative rounded-3xl overflow-hidden gradient-tsu p-6 sm:p-10 text-white shadow-xl">
+                <div class="absolute -right-10 -bottom-10 opacity-10 text-9xl">
+                    <i class="fa-solid fa-hotel"></i>
+                </div>
+                <div class="relative z-10 max-w-3xl">
+                    <div class="inline-flex items-center space-x-2 bg-amber-400/20 text-amber-300 border border-amber-400/30 px-3 py-1 rounded-full text-xs font-medium mb-3 backdrop-blur-md">
+                        <i class="fa-solid fa-sparkles"></i> <span>ค้นหาหอพักยืนยันตัวตน ปลอดภัย ได้ห้องชัวร์ 100%</span>
+                    </div>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+                        ค้นหาและจองหอพักใกล้มหาวิทยาลัยทักษิณ
+                    </h2>
+                    <p class="mt-2 text-slate-200 text-sm sm:text-base leading-relaxed">
+                        สะดวก รวดเร็ว พร้อมระบบจอง ชำระเงินมัดจำผ่าน PromptPay/Mobile Banking และติดตามสถานะแบบเรียลไทม์
+                    </p>
+
+                    <!-- CAMPUS SELECTION TABS -->
+                    <div class="mt-6 flex flex-wrap gap-2 p-1.5 bg-slate-900/40 rounded-2xl border border-white/20 backdrop-blur-md max-w-lg">
+                        <button id="campusTab-all" onclick="setCampusFilter('all')" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-2 bg-white text-tsu-deep shadow">
+                            <i class="fa-solid fa-compass"></i>
+                            <span>ทุกวิทยาเขต</span>
+                        </button>
+                        <button id="campusTab-songkhla" onclick="setCampusFilter('songkhla')" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-2 text-white hover:bg-white/10">
+                            <i class="fa-solid fa-water"></i>
+                            <span>วิทยาเขตสงขลา</span>
+                        </button>
+                        <button id="campusTab-phatthalung" onclick="setCampusFilter('phatthalung')" class="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-2 text-white hover:bg-white/10">
+                            <i class="fa-solid fa-mountain-sun"></i>
+                            <span>วิทยาเขตพัทลุง</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEARCH & FILTER BAR -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Search Input -->
+                    <div class="md:col-span-2 relative">
+                        <label class="block text-xs font-bold text-slate-600 mb-1">
+                            <i class="fa-solid fa-magnifying-glass text-tsu-blue mr-1"></i> ค้นหาชื่อหอพัก หรือทำเล
+                        </label>
+                        <input type="text" id="searchInput" oninput="applyFilters()" placeholder="เช่น ศรีตรัง, ปาริชาติ, ซอยประตู 1..." 
+                               class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-tsu-blue focus:bg-white transition">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-8 text-slate-400"></i>
+                    </div>
+
+                    <!-- Room Type Filter -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">
+                            <i class="fa-solid fa-snowflake text-tsu-sky mr-1"></i> ประเภทห้องพัก
+                        </label>
+                        <select id="roomTypeFilter" onchange="applyFilters()" class="w-full py-2.5 px-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-tsu-blue focus:bg-white transition">
+                            <option value="all">ทั้งหมด (แอร์ & พัดลม)</option>
+                            <option value="air">ห้องปรับอากาศ (แอร์)</option>
+                            <option value="fan">ห้องพัดลม</option>
+                        </select>
+                    </div>
+
+                    <!-- Price Slider Filter -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-bold text-slate-600">
+                                <i class="fa-solid fa-tags text-tsu-gold mr-1"></i> ราคาสูงสุด/เดือน
+                            </label>
+                            <span id="priceDisplay" class="text-xs font-extrabold text-tsu-blue">฿8,000</span>
+                        </div>
+                        <input type="range" id="priceRange" min="2000" max="8000" step="200" value="8000" oninput="updatePriceDisplay(this.value); applyFilters();"
+                               class="w-full accent-tsu-blue cursor-pointer">
+                    </div>
+                </div>
+
+                <!-- AMENITIES CHIPS FILTER -->
+                <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+                    <span class="text-xs font-bold text-slate-500 mr-2"><i class="fa-solid fa-sliders mr-1"></i>สิ่งอำนวยความสะดวก:</span>
+                    <button onclick="toggleAmenityFilter(this, 'wifi')" class="amenity-chip bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-xl border border-slate-200 font-medium transition">
+                        <i class="fa-solid fa-wifi mr-1 text-slate-500"></i> Wi-Fi
+                    </button>
+                    <button onclick="toggleAmenityFilter(this, 'keycard')" class="amenity-chip bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-xl border border-slate-200 font-medium transition">
+                        <i class="fa-solid fa-key mr-1 text-slate-500"></i> คีย์การ์ด
+                    </button>
+                    <button onclick="toggleAmenityFilter(this, 'parking')" class="amenity-chip bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-xl border border-slate-200 font-medium transition">
+                        <i class="fa-solid fa-square-parking mr-1 text-slate-500"></i> ที่จอดรถ
+                    </button>
+                    <button onclick="toggleAmenityFilter(this, 'cctv')" class="amenity-chip bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-xl border border-slate-200 font-medium transition">
+                        <i class="fa-solid fa-video mr-1 text-slate-500"></i> กล้องวงจรปิด
+                    </button>
+                    <button onclick="toggleAmenityFilter(this, 'water_heater')" class="amenity-chip bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs px-3 py-1.5 rounded-xl border border-slate-200 font-medium transition">
+                        <i class="fa-solid fa-shower mr-1 text-slate-500"></i> เครื่องทำน้ำอุ่น
+                    </button>
+                    <button onclick="resetFilters()" class="text-xs text-rose-600 hover:underline font-semibold ml-auto">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> รีเซ็ตตัวกรอง
+                    </button>
+                </div>
+            </div>
+
+            <!-- RESULT SUMMARY BAR -->
+            <div class="flex justify-between items-center text-sm px-1">
+                <div class="text-slate-600">
+                    พบหอพักว่างทั้งหมด <span id="dormCount" class="font-extrabold text-tsu-deep">0</span> แห่ง
+                </div>
+                <div class="text-xs text-tsu-muted flex items-center space-x-1">
+                    <i class="fa-solid fa-circle-info text-tsu-blue"></i>
+                    <span>ราคาที่แสดงรวมค่ามัดจำล่วงหน้าแล้วบางส่วน</span>
+                </div>
+            </div>
+
+            <!-- DORMITORY CARDS GRID -->
+            <div id="dormitoriesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Dynamically populated by renderDormitories() -->
+            </div>
+        </section>
+
+        <!-- ================= PAGE 2: MY BOOKINGS & CANCELLATION ================= -->
+        <section id="view-my-bookings" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-wrap justify-between items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-tsu-deep flex items-center">
+                        <i class="fa-solid fa-receipt text-tsu-gold mr-3"></i> รายการจองหอพักของฉัน
+                    </h2>
+                    <p class="text-xs text-tsu-muted mt-1">ตรวจสอบสถานะการชำระเงิน ชำระเงินมัดจำ หรือยกเลิกการจองหอพัก</p>
+                </div>
+                <button onclick="navigateTo('search')" class="px-4 py-2 bg-tsu-blue text-white rounded-xl text-xs font-bold shadow hover:bg-blue-700 transition">
+                    <i class="fa-solid fa-plus mr-1"></i> จองหอพักเพิ่มเติม
+                </button>
+            </div>
+
+            <!-- BOOKING LIST CARDS -->
+            <div id="myBookingsContainer" class="space-y-4">
+                <!-- Dynamically populated by renderMyBookings() -->
+            </div>
+        </section>
+
+        <!-- ================= PAGE 3: DORM OWNER DASHBOARD ================= -->
+        <section id="view-owner-dashboard" class="hidden space-y-6">
+            <div class="bg-gradient-to-r from-slate-800 to-tsu-deep p-6 rounded-2xl text-white shadow-lg flex justify-between items-center">
+                <div>
+                    <span class="bg-amber-400 text-slate-900 text-xs font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">
+                        <i class="fa-solid fa-building-user mr-1"></i> Owner Panel
+                    </span>
+                    <h2 class="text-2xl font-bold">แผงควบคุมเจ้าของหอพัก (Dormitory Owner)</h2>
+                    <p class="text-xs text-slate-300 mt-1">จัดการข้อมูลห้องพัก ตรวจสอบสลิปโอนเงินมัดจำ และยืนยันการจองของนักศึกษา</p>
+                </div>
+                <button onclick="openAddDormModal()" class="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold rounded-xl text-xs shadow transition flex items-center">
+                    <i class="fa-solid fa-circle-plus mr-1.5 text-base"></i> เพิ่มข้อมูลหอพักใหม่
+                </button>
+            </div>
+
+            <!-- OWNER STATS CARDS -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-blue-100 text-tsu-blue flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-door-open"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-tsu-muted">ห้องพักทั้งหมด</p>
+                        <p class="text-2xl font-extrabold text-slate-800">48 ห้อง</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-tsu-muted">รอตรวจสอบมัดจำ</p>
+                        <p id="ownerPendingCount" class="text-2xl font-extrabold text-amber-600">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-tsu-muted">ยืนยันแล้วเดือนนี้</p>
+                        <p id="ownerConfirmedCount" class="text-2xl font-extrabold text-emerald-600">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-12 h-12 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-xl font-bold">
+                        <i class="fa-solid fa-sack-dollar"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-tsu-muted">ยอดมัดจำรวม</p>
+                        <p id="ownerRevenueTotal" class="text-2xl font-extrabold text-purple-700">฿0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- OWNER BOOKING MANAGEMENT TABLE -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                    <h3 class="font-bold text-slate-800 text-base flex items-center">
+                        <i class="fa-solid fa-list-check text-tsu-blue mr-2"></i> รายการจองหอพักที่ต้องตรวจสอบ
+                    </h3>
+                    <span class="text-xs bg-slate-100 text-slate-600 font-medium px-2.5 py-1 rounded-full">เรียงตามวันที่จองล่าสุด</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                                <th class="p-4">รหัสจอง</th>
+                                <th class="p-4">ชื่อนักศึกษา</th>
+                                <th class="p-4">หอพัก / ประเภทห้อง</th>
+                                <th class="p-4">วิทยาเขต</th>
+                                <th class="p-4">ยอดมัดจำ</th>
+                                <th class="p-4">สถานะ</th>
+                                <th class="p-4 text-center">หลักฐานสลิป</th>
+                                <th class="p-4 text-center">การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ownerBookingsTable" class="divide-y divide-slate-100">
+                            <!-- Dynamically populated by renderOwnerTable() -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= PAGE 4: ADMIN REPORT & ANALYTICS ================= -->
+        <section id="view-admin-dashboard" class="hidden space-y-6">
+            <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-xl flex justify-between items-center">
+                <div>
+                    <span class="bg-tsu-gold text-slate-900 text-xs font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">
+                        <i class="fa-solid fa-shield-halved mr-1"></i> Admin Central
+                    </span>
+                    <h2 class="text-2xl font-bold">ระบบบริหารจัดการและรายงานสรุป (System Analytics)</h2>
+                    <p class="text-xs text-slate-300 mt-1">รายงานสถิติการจองหอพัก มหาวิทยาลัยทักษิณ ทั้งวิทยาเขตสงขลา และพัทลุง</p>
+                </div>
+                <button onclick="exportReportCSV()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 rounded-xl text-xs font-bold transition">
+                    <i class="fa-solid fa-file-csv mr-1 text-sm"></i> ส่งออกรายงาน CSV
+                </button>
+            </div>
+
+            <!-- ADMIN STAT CARDS -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-bold text-tsu-muted">ยอดการจองรวมทั้งระบบ</p>
+                    <p id="adminTotalBookings" class="text-3xl font-extrabold text-tsu-deep mt-1">128</p>
+                    <span class="text-[11px] text-emerald-600 font-medium"><i class="fa-solid fa-arrow-trend-up"></i> +14% จากเดือนที่แล้ว</span>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-bold text-tsu-muted">ยอดเงินมัดจำรวมในระบบ</p>
+                    <p id="adminTotalRevenue" class="text-3xl font-extrabold text-emerald-600 mt-1">฿542,000</p>
+                    <span class="text-[11px] text-emerald-600 font-medium"><i class="fa-solid fa-check-circle"></i> ชำระเงินสมบูรณ์</span>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-bold text-tsu-muted">สัดส่วนวิทยาเขตสงขลา</p>
+                    <p class="text-3xl font-extrabold text-tsu-blue mt-1">58%</p>
+                    <span class="text-[11px] text-slate-500 font-medium">ใกล้มหาวิทยาลัยทักษิณ สงขลา</span>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <p class="text-xs font-bold text-tsu-muted">สัดส่วนวิทยาเขตพัทลุง</p>
+                    <p class="text-3xl font-extrabold text-amber-600 mt-1">42%</p>
+                    <span class="text-[11px] text-slate-500 font-medium">ใกล้มหาวิทยาลัยทักษิณ พัทลุง</span>
+                </div>
+            </div>
+
+            <!-- CHARTS GRID -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Monthly Booking Trends Chart -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-800 text-sm mb-4 flex items-center">
+                        <i class="fa-solid fa-chart-column text-tsu-blue mr-2"></i> รายงานสถิติการจองแยกตามวิทยาเขต (ปี 2026)
+                    </h3>
+                    <div class="h-64">
+                        <canvas id="campusBarChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Room Type Preference Chart -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-slate-800 text-sm mb-4 flex items-center">
+                        <i class="fa-solid fa-chart-pie text-tsu-gold mr-2"></i> ความนิยมประเภทห้องพัก (แอร์ vs พัดลม)
+                    </h3>
+                    <div class="h-64 flex justify-center">
+                        <canvas id="roomDoughnutChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= MODAL 1: DORMITORY DETAILS & ROOM SELECTION ================= -->
+    <div id="dormDetailModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-3xl w-full overflow-hidden shadow-2xl border border-slate-200 transform transition-all my-8 max-h-[90vh] flex flex-col">
+            
+            <!-- Modal Header -->
+            <div class="relative bg-tsu-deep text-white p-6 flex justify-between items-start">
+                <div>
+                    <span id="modalCampusBadge" class="bg-amber-400 text-slate-900 text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase">
+                        วิทยาเขตสงขลา
+                    </span>
+                    <h3 id="modalDormName" class="text-2xl font-bold mt-1">ชื่อหอพัก</h3>
+                    <p id="modalDormAddress" class="text-xs text-slate-200 mt-1">
+                        <i class="fa-solid fa-location-dot text-amber-300 mr-1"></i> ที่อยู่หอพัก
+                    </p>
+                </div>
+                <button onclick="closeDormModal()" class="w-8 h-8 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Modal Scrollable Content -->
+            <div class="p-6 overflow-y-auto space-y-6 custom-scrollbar">
+                <!-- Gallery Image Showcase -->
+                <div class="relative rounded-2xl overflow-hidden bg-slate-900 h-64 border border-slate-200 group">
+                    <img id="modalDormImage" src="" alt="Dormitory Photo" class="w-full h-full object-cover">
+                    <div class="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md text-white text-xs px-3 py-1.5 rounded-xl flex items-center space-x-1">
+                        <i class="fa-solid fa-camera mr-1 text-amber-400"></i>
+                        <span>รูปถ่ายหอพักจริง 100%</span>
+                    </div>
+                </div>
+
+                <!-- Distance & Rating Info -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+                        <span class="text-[11px] text-tsu-muted block">ระยะทางถึงประตู ม.</span>
+                        <span id="modalDistance" class="font-extrabold text-tsu-blue text-base">500 ม.</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+                        <span class="text-[11px] text-tsu-muted block">คะแนนรีวิว</span>
+                        <span id="modalRating" class="font-extrabold text-amber-500 text-base">⭐ 4.8 / 5.0</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+                        <span class="text-[11px] text-tsu-muted block">ห้องว่างคงเหลือ</span>
+                        <span id="modalAvailableRooms" class="font-extrabold text-emerald-600 text-base">4 ห้อง</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+                        <span class="text-[11px] text-tsu-muted block">ค่าน้ำ / ค่าไฟ</span>
+                        <span class="font-bold text-slate-700 text-xs">ตามมิเตอร์จริง</span>
+                    </div>
+                </div>
+
+                <!-- Facilities Checklist -->
+                <div>
+                    <h4 class="font-bold text-slate-800 text-sm mb-2"><i class="fa-solid fa-list-check text-tsu-blue mr-1"></i> สิ่งอำนวยความสะดวก</h4>
+                    <div id="modalAmenitiesList" class="flex flex-wrap gap-2">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+                <!-- ROOM CHOICES & PRICE CALCULATOR -->
+                <div>
+                    <h4 class="font-bold text-slate-800 text-sm mb-3"><i class="fa-solid fa-bed text-tsu-gold mr-1"></i> เลือกประเภทห้องพักที่ต้องการ</h4>
+                    <div id="modalRoomOptions" class="space-y-3">
+                        <!-- Dynamically populated room options -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-between items-center">
+                <button onclick="closeDormModal()" class="px-4 py-2 border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-xl text-xs font-bold transition">
+                    ปิดหน้าต่าง
+                </button>
+                <button id="proceedToBookBtn" onclick="proceedToBooking()" class="px-6 py-2.5 bg-tsu-blue hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-lg transition flex items-center space-x-2">
+                    <span>ดำเนินการจองห้องพัก</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ================= MODAL 2: BOOKING & DEPOSIT PAYMENT ================= -->
+    <div id="bookingModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-3xl max-w-2xl w-full overflow-hidden shadow-2xl border border-slate-200 my-8">
+            
+            <div class="gradient-tsu text-white p-6 flex justify-between items-center">
+                <div>
+                    <span class="bg-amber-400 text-slate-900 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase">Step 2 / 2</span>
+                    <h3 class="text-xl font-bold mt-1">ยืนยันการจองและชำระเงินมัดจำ</h3>
+                </div>
+                <button onclick="closeBookingModal()" class="w-8 h-8 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-6">
+                <!-- Dorm & Room Selected Summary Card -->
+                <div class="bg-blue-50/70 p-4 rounded-2xl border border-blue-200 flex justify-between items-center">
+                    <div>
+                        <p id="summaryDormName" class="font-bold text-tsu-deep text-base">หอพักศรีตรัง แมนชั่น</p>
+                        <p id="summaryRoomType" class="text-xs text-tsu-muted">ห้องปรับอากาศ (Aircon Room)</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-500 block">ค่าเช่าเดือนละ</span>
+                        <span id="summaryMonthlyRent" class="text-lg font-extrabold text-tsu-blue">฿4,200</span>
+                    </div>
+                </div>
+
+                <!-- Check-in Date Selector -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        <i class="fa-solid fa-calendar-days text-tsu-blue mr-1"></i> วันที่คาดว่าจะเข้าพัก (Check-in Date)
+                    </label>
+                    <input type="date" id="checkInDate" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium focus:ring-2 focus:ring-tsu-blue">
+                </div>
+
+                <!-- DETAILED CALCULATION BREAKDOWN CARD -->
+                <div class="bg-slate-900 text-white p-5 rounded-2xl space-y-3">
+                    <div class="flex justify-between text-xs text-slate-300">
+                        <span>ค่าเช่าเดือนแรก (Monthly Rent)</span>
+                        <span id="calcRent">฿4,200</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-300">
+                        <span>เงินประกัน/มัดจำห้องพัก (Deposit 1 Month)</span>
+                        <span id="calcDeposit">฿4,200</span>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-300">
+                        <span>ค่าธรรมเนียมบริการระบบ (Service Fee)</span>
+                        <span class="text-emerald-400 font-bold">ฟรี (Free)</span>
+                    </div>
+                    <div class="pt-3 border-t border-slate-700 flex justify-between items-center">
+                        <div>
+                            <p class="text-xs font-bold text-amber-300">ยอดเงินมัดจำที่ต้องชำระวันนี้</p>
+                            <p class="text-[10px] text-slate-400">(ชำระเพื่อยืนยันการสิทธิ์การเข้าพัก)</p>
+                        </div>
+                        <span id="calcGrandTotal" class="text-2xl font-extrabold text-amber-400">฿4,200</span>
+                    </div>
+                </div>
+
+                <!-- PROMPTPAY & BANK PAYMENT SECTION -->
+                <div class="border border-slate-200 p-4 rounded-2xl space-y-4">
+                    <h4 class="font-bold text-slate-800 text-xs flex items-center">
+                        <i class="fa-solid fa-qrcode text-tsu-blue mr-2 text-base"></i> ชำระเงินผ่าน Mobile Banking / PromptPay
+                    </h4>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                        <!-- QR Code Generator View -->
+                        <div class="bg-slate-100 p-4 rounded-2xl text-center border border-slate-200">
+                            <div class="bg-white p-3 rounded-xl inline-block shadow-sm border border-slate-200">
+                                <!-- Generated Dynamic PromptPay QR Code Simulated SVG -->
+                                <svg class="w-36 h-36 mx-auto" viewBox="0 0 100 100" fill="none">
+                                    <rect width="100" height="100" fill="white"/>
+                                    <path d="M10 10h30v30H10zM60 10h30v30H60zM10 60h30v30H10z" fill="#1E3A8A"/>
+                                    <path d="M15 15h20v20H15zM65 15h20v20H65zM15 65h20v20H15z" fill="white"/>
+                                    <path d="M20 20h10v10H20zM70 20h10v10H70zM20 70h10v10H20z" fill="#1E3A8A"/>
+                                    <rect x="45" y="10" width="10" height="30" fill="#1E3A8A"/>
+                                    <rect x="10" y="45" width="30" height="10" fill="#1E3A8A"/>
+                                    <rect x="50" y="50" width="40" height="40" fill="#1E3A8A"/>
+                                    <rect x="60" y="60" width="20" height="20" fill="white"/>
+                                    <rect x="65" y="65" width="10" height="10" fill="#F59E0B"/>
+                                </svg>
+                            </div>
+                            <p class="text-[11px] font-bold text-slate-700 mt-2">สแกน QR Code ด้วยแอปธนาคารทุกธนาคาร</p>
+                            <p class="text-[10px] text-tsu-muted">พร้อมเพย์ มหาวิทยาลัยทักษิณ (0-9940-XXXXX-00)</p>
+                        </div>
+
+                        <!-- Bank Transfer Numbers -->
+                        <div class="space-y-2 text-xs">
+                            <p class="font-bold text-slate-700 mb-1">หรือโอนเงินผ่านบัญชีธนาคาร:</p>
+                            
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <span class="w-6 h-6 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center">กสิกร</span>
+                                    <div>
+                                        <p class="font-bold text-slate-800">ธนาคารกสิกรไทย</p>
+                                        <p class="text-[11px] text-slate-500">123-4-56789-0 (หอพัก TSU)</p>
+                                    </div>
+                                </div>
+                                <button onclick="copyBankAcc('123-4-56789-0')" class="text-xs bg-white text-tsu-blue border border-blue-200 px-2 py-1 rounded-lg font-bold hover:bg-blue-50">
+                                    ก๊อปปี้
+                                </button>
+                            </div>
+
+                            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200 flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <span class="w-6 h-6 rounded-full bg-purple-700 text-white text-[10px] font-bold flex items-center justify-center">ไทยพาณิชย์</span>
+                                    <div>
+                                        <p class="font-bold text-slate-800">ธนาคารไทยพาณิชย์</p>
+                                        <p class="text-[11px] text-slate-500">987-6-54321-0 (หอพัก TSU)</p>
+                                    </div>
+                                </div>
+                                <button onclick="copyBankAcc('987-6-54321-0')" class="text-xs bg-white text-tsu-blue border border-blue-200 px-2 py-1 rounded-lg font-bold hover:bg-blue-50">
+                                    ก๊อปปี้
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SLIP UPLOAD SECTION -->
+                    <div class="pt-3 border-t border-slate-200">
+                        <label class="block text-xs font-bold text-slate-700 mb-1">
+                            <i class="fa-solid fa-file-arrow-up text-tsu-blue mr-1"></i> อัปโหลดหลักฐานการโอนเงิน (สลิปธนาคาร)
+                        </label>
+                        <div class="flex items-center space-x-3">
+                            <input type="file" id="slipInput" accept="image/*" onchange="previewSlip(event)" class="text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-tsu-blue hover:file:bg-blue-100 cursor-pointer">
+                        </div>
+                        <div id="slipPreviewBox" class="mt-2 hidden">
+                            <img id="slipPreviewImg" src="" alt="Slip Preview" class="h-28 rounded-xl border border-slate-300 shadow-sm">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-between items-center">
+                <button onclick="closeBookingModal()" class="px-4 py-2 border border-slate-300 text-slate-600 hover:bg-slate-100 rounded-xl text-xs font-bold">
+                    ยกเลิก
+                </button>
+                <button onclick="submitBookingPayment()" class="px-6 py-2.5 gradient-gold text-slate-900 font-extrabold rounded-xl text-xs shadow-md hover:opacity-90 transition flex items-center space-x-2">
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>ยืนยันการชำระเงินมัดจำ</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ================= MODAL 3: AUTHENTICATION (LOGIN) ================= -->
+    <div id="loginModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200">
+            <div class="gradient-tsu text-white p-6 text-center relative">
+                <button onclick="closeLoginModal()" class="absolute right-4 top-4 w-8 h-8 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div class="w-12 h-12 rounded-2xl bg-white/10 mx-auto flex items-center justify-center mb-2">
+                    <i class="fa-solid fa-user-lock text-2xl text-amber-300"></i>
+                </div>
+                <h3 class="text-xl font-bold">เข้าสู่ระบบ (Login)</h3>
+                <p class="text-xs text-slate-200 mt-1">ใช้เลขบัตรประชาชน 13 หลัก และเบอร์โทรศัพท์เพื่อยืนยัน OTP</p>
+            </div>
+
+            <form onsubmit="handleLoginSubmit(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">เลขบัตรประชาชน (13 หลัก)</label>
+                    <input type="text" id="loginIdCard" maxlength="13" placeholder="1801234567891" required
+                           class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-tsu-blue">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">เบอร์โทรศัพท์มือถือ</label>
+                    <input type="tel" id="loginPhone" maxlength="10" placeholder="0812345678" required
+                           class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-tsu-blue">
+                </div>
+
+                <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-800 flex items-start space-x-2">
+                    <i class="fa-solid fa-shield-cat text-amber-600 mt-0.5"></i>
+                    <span>ระบบจะส่งรหัส OTP 6 หลัก ไปยังเบอร์โทรศัพท์มือถือเพื่อยืนยันตัวตน</span>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-tsu-blue hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-md transition">
+                    รับรหัส OTP เข้าสู่ระบบ
+                </button>
+
+                <p class="text-center text-xs text-tsu-muted pt-2">
+                    ยังไม่มีบัญชี? <button type="button" onclick="closeLoginModal(); openRegisterModal();" class="text-tsu-blue font-bold hover:underline">สมัครสมาชิกที่นี่</button>
+                </p>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ================= MODAL 4: OTP VERIFICATION ================= -->
+    <div id="otpModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200 text-center p-6">
+            <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 mx-auto flex items-center justify-center text-2xl font-bold mb-3">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800">กรอกรหัส OTP ยืนยัน</h3>
+            <p class="text-xs text-tsu-muted mt-1">ส่งรหัสไปยังหมายเลข <span id="otpTargetPhone" class="font-bold text-slate-800">081-XXX-5678</span></p>
+
+            <div class="my-6">
+                <input type="text" id="otpInput" maxlength="6" placeholder="849201" 
+                       class="w-full tracking-widest text-center text-2xl font-mono font-bold p-3 bg-slate-100 border border-slate-300 rounded-2xl focus:ring-2 focus:ring-tsu-blue">
+                <button type="button" onclick="autoFillOTP()" class="mt-2 text-[11px] text-tsu-blue font-semibold hover:underline">
+                    ⚡ คลิกเพื่อจำลองเติม OTP อัตโนมัติ (849201)
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-500 mb-4">
+                ขอรหัสใหม่ได้ใน <span id="otpTimer" class="font-bold text-rose-600">60</span> วินาที
+            </p>
+
+            <button onclick="verifyOTP()" class="w-full py-3 gradient-tsu text-white font-bold rounded-xl text-xs shadow-md transition">
+                ยืนยันตัวตนเข้าใช้งาน
+            </button>
+        </div>
+    </div>
+
+
+    <!-- ================= MODAL 5: REGISTRATION ================= -->
+    <div id="registerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200">
+            <div class="gradient-tsu text-white p-6 relative">
+                <button onclick="closeRegisterModal()" class="absolute right-4 top-4 w-8 h-8 bg-white/20 hover:bg-white/30 text-white rounded-full flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <h3 class="text-xl font-bold">สมัครสมาชิกใหม่ (Register)</h3>
+                <p class="text-xs text-slate-200 mt-1">กรอกข้อมูลให้ครบถ้วนเพื่อใช้บริการจองหอพัก ม.ทักษิณ</p>
+            </div>
+
+            <form onsubmit="handleRegisterSubmit(event)" class="p-6 space-y-3.5 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">ชื่อ - นามสกุลจริง *</label>
+                    <input type="text" id="regFullName" placeholder="เช่น นายสมชาย ใจดี" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">เลขบัตรประชาชน (13 หลัก) *</label>
+                    <input type="text" id="regIdCard" maxlength="13" placeholder="1801234567891" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">เบอร์โทรศัพท์ *</label>
+                        <input type="tel" id="regPhone" maxlength="10" placeholder="0812345678" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">รหัสนักศึกษา (ถ้ามี)</label>
+                        <input type="text" id="regStudentId" placeholder="661011XXXX" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">อีเมล *</label>
+                    <input type="email" id="regEmail" placeholder="student@tsu.ac.th" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl">
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">รหัสผ่าน *</label>
+                    <input type="password" id="regPassword" placeholder="อย่างน้อย 6 ตัวอักษร" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl">
+                </div>
+
+                <div class="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-800 text-[11px] flex items-center space-x-2">
+                    <i class="fa-solid fa-lock text-emerald-600"></i>
+                    <span>ระบบรองรับการเข้ารหัสข้อมูล SHA-256 ป้องกันข้อมูลรั่วไหล</span>
+                </div>
+
+                <button type="submit" class="w-full py-3 bg-tsu-blue hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-md transition">
+                    ยืนยันการสมัครสมาชิก
+                </button>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- ================= MODAL 6: ADD DORMITORY (OWNER ROLE) ================= -->
+    <div id="addDormModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200">
+            <div class="bg-slate-900 text-white p-5 flex justify-between items-center">
+                <h3 class="font-bold text-lg"><i class="fa-solid fa-plus text-amber-400 mr-2"></i> เพิ่มข้อมูลหอพักใหม่</h3>
+                <button onclick="closeAddDormModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <form onsubmit="handleAddDormSubmit(event)" class="p-6 space-y-3.5 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">ชื่อหอพัก *</label>
+                    <input type="text" id="newDormName" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">วิทยาเขต *</label>
+                        <select id="newDormCampus" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl">
+                            <option value="songkhla">วิทยาเขตสงขลา</option>
+                            <option value="phatthalung">วิทยาเขตพัทลุง</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-bold text-slate-700 mb-1">ราคาเริ่มต้น (บาท/เดือน) *</label>
+                        <input type="number" id="newDormPrice" placeholder="3500" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl">
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-700 mb-1">ระยะทางถึงประตู ม. (เมตร) *</label>
+                    <input type="number" id="newDormDistance" placeholder="500" required class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl">
+                </div>
+                <button type="submit" class="w-full py-3 bg-tsu-blue hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-md transition">
+                    บันทึกข้อมูลหอพัก
+                </button>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- MAIN APPLICATION JAVASCRIPT LOGIC -->
+    <script>
+        // GLOBAL STATE
+        let currentUser = null; // { name, idCard, phone, role }
+        let currentRole = 'student'; // 'student' | 'owner' | 'admin'
+        let currentTab = 'search'; // 'search' | 'my-bookings' | 'owner-dashboard' | 'admin-dashboard'
+        let selectedCampus = 'all'; // 'all' | 'songkhla' | 'phatthalung'
+        let selectedAmenities = new Set();
+        let selectedDormForBooking = null;
+        let selectedRoomForBooking = null;
+
+        // MOCK DORMITORIES DATA (TSU SONGKHLA & PHATTHALUNG)
+        let dormitories = [
+            {
+                id: 'dorm-1',
+                name: 'หอพักศรีตรัง แมนชั่น (Sritrang Mansion)',
+                campus: 'songkhla',
+                campusText: 'วิทยาเขตสงขลา (เขารูปช้าง)',
+                address: 'ซอยประตู 1 ม.ทักษิณ ต.เขารูปช้าง อ.เมือง จ.สงขลา',
+                price: 3800,
+                maxPrice: 4500,
+                distance: 350,
+                rating: 4.8,
+                availableRooms: 5,
+                image: 'https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80',
+                amenities: ['wifi', 'keycard', 'parking', 'cctv', 'water_heater'],
+                rooms: [
+                    { id: 'r1', name: 'ห้องปรับอากาศ (Aircon Standard)', rent: 4200, deposit: 4200, isAir: true },
+                    { id: 'r2', name: 'ห้องพัดลม (Fan Room)', rent: 3200, deposit: 3200, isAir: false }
+                ]
+            },
+            {
+                id: 'dorm-2',
+                name: 'ปาริชาติ ลิฟวิ่ง (Parichat Living)',
+                campus: 'songkhla',
+                campusText: 'วิทยาเขตสงขลา (เขารูปช้าง)',
+                address: 'ถนนกาญจนวนิช ใกล้ประตูทางเข้า ม.ทักษิณ สงขลา',
+                price: 4200,
+                maxPrice: 5200,
+                distance: 200,
+                rating: 4.9,
+                availableRooms: 3,
+                image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80',
+                amenities: ['wifi', 'keycard', 'parking', 'cctv', 'water_heater', 'elevator'],
+                rooms: [
+                    { id: 'r3', name: 'ห้องสตูดิโอ ปรับอากาศ (Deluxe Air)', rent: 4800, deposit: 4800, isAir: true }
+                ]
+            },
+            {
+                id: 'dorm-3',
+                name: 'หอพักสุขใจ ใกล้ม.ทักษิณ (Sukjai Dorm)',
+                campus: 'songkhla',
+                campusText: 'วิทยาเขตสงขลา (เขารูปช้าง)',
+                address: 'ซอย 8 เขารูปช้าง อ.เมือง จ.สงขลา',
+                price: 2800,
+                maxPrice: 3500,
+                distance: 800,
+                rating: 4.5,
+                availableRooms: 8,
+                image: 'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80',
+                amenities: ['wifi', 'parking', 'cctv'],
+                rooms: [
+                    { id: 'r4', name: 'ห้องพัดลมประหยัด (Budget Fan)', rent: 2800, deposit: 2800, isAir: false },
+                    { id: 'r5', name: 'ห้องปรับอากาศ (Standard Air)', rent: 3500, deposit: 3500, isAir: true }
+                ]
+            },
+            {
+                id: 'dorm-4',
+                name: 'มโนราห์ เพลส พัทลุง (Manora Place)',
+                campus: 'phatthalung',
+                campusText: 'วิทยาเขตพัทลุง (ป่าพะยอม)',
+                address: 'หน้ามหาวิทยาลัยทักษิณ วิทยาเขตพัทลุง ต.บ้านพร้าว อ.ป่าพะยอม',
+                price: 3200,
+                maxPrice: 4000,
+                distance: 400,
+                rating: 4.7,
+                availableRooms: 6,
+                image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80',
+                amenities: ['wifi', 'keycard', 'parking', 'cctv', 'water_heater'],
+                rooms: [
+                    { id: 'r6', name: 'ห้องแอร์ พัทลุงสตูดิโอ (Air Studio)', rent: 3800, deposit: 3800, isAir: true }
+                ]
+            },
+            {
+                id: 'dorm-5',
+                name: 'ทักษิณา เรสซิเดนซ์ พัทลุง (Thaksina Residence)',
+                campus: 'phatthalung',
+                campusText: 'วิทยาเขตพัทลุง (ป่าพะยอม)',
+                address: 'ถนนสายป่าพะยอม ใกล้ม.ทักษิณ พัทลุง',
+                price: 3500,
+                maxPrice: 4200,
+                distance: 600,
+                rating: 4.8,
+                availableRooms: 4,
+                image: 'https://images.unsplash.com/photo-1502672023488-70e25813eb80?auto=format&fit=crop&w=800&q=80',
+                amenities: ['wifi', 'keycard', 'cctv', 'water_heater'],
+                rooms: [
+                    { id: 'r7', name: 'ห้องปรับอากาศ โมเดิร์น (Modern Air)', rent: 3900, deposit: 3900, isAir: true }
+                ]
+            },
+            {
+                id: 'dorm-6',
+                name: 'หอพักเคียงฟ้า พัทลุง (Kiangfah Dorm)',
+                campus: 'phatthalung',
+                campusText: 'วิทยาเขตพัทลุง (ป่าพะยอม)',
+                address: 'ซอยป่าพะยอม 3 ใกล้มหาวิทยาลัยทักษิณ พัทลุง',
+                price: 2500,
+                maxPrice: 3200,
+                distance: 300,
+                rating: 4.4,
+                availableRooms: 7,
+                image: 'https://images.unsplash.com/photo-1536376072261-38c75010e6c9?auto=format&fit=crop&w=800&q=80',
+                amenities: ['wifi', 'parking'],
+                rooms: [
+                    { id: 'r8', name: 'ห้องพัดลม กว้างขวาง (Spacious Fan)', rent: 2500, deposit: 2500, isAir: false }
+                ]
+            }
+        ];
+
+        // MOCK INITIAL BOOKINGS
+        let bookings = [
+            {
+                id: 'TXN-2026-883A',
+                dormId: 'dorm-1',
+                dormName: 'หอพักศรีตรัง แมนชั่น (Sritrang Mansion)',
+                campusText: 'วิทยาเขตสงขลา',
+                roomName: 'ห้องปรับอากาศ (Aircon Standard)',
+                studentName: 'สมชาย ใจดี',
+                studentPhone: '081-234-5678',
+                amount: 4200,
+                status: 'confirmed', // 'pending' | 'confirmed' | 'cancelled'
+                date: '2026-09-20',
+                checkInDate: '2026-10-01',
+                slipUploaded: true
+            }
+        ];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderNav();
+            renderDormitories();
+            updateUIState();
+            initCharts();
+        });
+
+        // MASKING HELPER
+        function maskIdCard(id) {
+            if (!id || id.length < 13) return '1-XXXX-XXXXX-XX-X';
+            return `${id.substring(0, 1)}-${id.substring(1, 5)}-XXXXX-${id.substring(10, 12)}-${id.substring(12)}`;
+        }
+
+        function maskPhone(phone) {
+            if (!phone || phone.length < 10) return '08X-XXX-XXXX';
+            return `${phone.substring(0, 3)}-XXX-${phone.substring(6)}`;
+        }
+
+        // ROLE SWITCHER
+        function switchRole(role) {
+            currentRole = role;
+            if (role === 'student') {
+                navigateTo('search');
+            } else if (role === 'owner') {
+                navigateTo('owner-dashboard');
+            } else if (role === 'admin') {
+                navigateTo('admin-dashboard');
+            }
+            renderNav();
+            Swal.fire({
+                title: 'สลับสิทธิ์การใช้งาน',
+                text: `คุณได้สลับบทบาทเป็น: ${role === 'student' ? 'นักศึกษา' : role === 'owner' ? 'เจ้าของหอพัก' : 'ผู้ดูแลระบบ'}`,
+                icon: 'info',
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+
+        // NAVIGATION ROUTER
+        function navigateTo(tab) {
+            currentTab = tab;
+            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+            
+            const target = document.getElementById(`view-${tab}`);
+            if (target) target.classList.remove('hidden');
+
+            renderNav();
+
+            if (tab === 'my-bookings') renderMyBookings();
+            if (tab === 'owner-dashboard') renderOwnerTable();
+            if (tab === 'admin-dashboard') renderAdminStats();
+        }
+
+        function renderNav() {
+            const nav = document.getElementById('desktopNav');
+            nav.innerHTML = '';
+
+            let links = [];
+            if (currentRole === 'student') {
+                links = [
+                    { id: 'search', icon: 'fa-magnifying-glass', label: 'ค้นหาหอพัก' },
+                    { id: 'my-bookings', icon: 'fa-receipt', label: 'การจองของฉัน', count: bookings.length }
+                ];
+            } else if (currentRole === 'owner') {
+                links = [
+                    { id: 'owner-dashboard', icon: 'fa-building-user', label: 'แผงควบคุมเจ้าของหอพัก' },
+                    { id: 'search', icon: 'fa-eye', label: 'มุมมองหน้าเว็บ' }
+                ];
+            } else if (currentRole === 'admin') {
+                links = [
+                    { id: 'admin-dashboard', icon: 'fa-chart-pie', label: 'สรุปรายงานระบบ' },
+                    { id: 'search', icon: 'fa-globe', label: 'ดูหอพักทั้งหมด' }
+                ];
+            }
+
+            links.forEach(link => {
+                const isActive = currentTab === link.id;
+                const btn = document.createElement('button');
+                btn.onclick = () => navigateTo(link.id);
+                btn.className = `px-3.5 py-2 rounded-xl font-bold text-xs transition flex items-center space-x-1.5 ${
+                    isActive ? 'bg-tsu-blue text-white shadow-md' : 'text-slate-600 hover:bg-slate-100 hover:text-tsu-blue'
+                }`;
+                btn.innerHTML = `
+                    <i class="fa-solid ${link.icon}"></i>
+                    <span>${link.label}</span>
+                    ${link.count ? `<span class="bg-amber-400 text-slate-900 text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ml-1">${link.count}</span>` : ''}
+                `;
+                nav.appendChild(btn);
+            });
+        }
+
+        function setCampusFilter(campus) {
+            selectedCampus = campus;
+            ['all', 'songkhla', 'phatthalung'].forEach(c => {
+                const btn = document.getElementById(`campusTab-${c}`);
+                if (c === campus) {
+                    btn.className = "flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-2 bg-white text-tsu-deep shadow";
+                } else {
+                    btn.className = "flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm transition flex items-center justify-center space-x-2 text-white hover:bg-white/10";
+                }
+            });
+            applyFilters();
+        }
+
+        function updatePriceDisplay(val) {
+            document.getElementById('priceDisplay').innerText = `฿${parseInt(val).toLocaleString()}`;
+        }
+
+        function toggleAmenityFilter(btn, amenity) {
+            if (selectedAmenities.has(amenity)) {
+                selectedAmenities.delete(amenity);
+                btn.classList.remove('bg-tsu-blue', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-700');
+            } else {
+                selectedAmenities.add(amenity);
+                btn.classList.add('bg-tsu-blue', 'text-white');
+                btn.classList.remove('bg-slate-100', 'text-slate-700');
+            }
+            applyFilters();
+        }
+
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('roomTypeFilter').value = 'all';
+            document.getElementById('priceRange').value = 8000;
+            updatePriceDisplay(8000);
+            selectedAmenities.clear();
+            document.querySelectorAll('.amenity-chip').forEach(b => {
+                b.classList.remove('bg-tsu-blue', 'text-white');
+                b.classList.add('bg-slate-100', 'text-slate-700');
+            });
+            selectedCampus = 'all';
+            setCampusFilter('all');
+        }
+
+        function applyFilters() {
+            const query = document.getElementById('searchInput').value.toLowerCase().trim();
+            const roomType = document.getElementById('roomTypeFilter').value;
+            const maxPrice = parseInt(document.getElementById('priceRange').value);
+
+            const filtered = dormitories.filter(d => {
+                // Campus filter
+                if (selectedCampus !== 'all' && d.campus !== selectedCampus) return false;
+
+                // Query filter
+                if (query && !d.name.toLowerCase().includes(query) && !d.address.toLowerCase().includes(query)) return false;
+
+                // Price filter
+                if (d.price > maxPrice) return false;
+
+                // Room type filter
+                if (roomType === 'air' && !d.rooms.some(r => r.isAir)) return false;
+                if (roomType === 'fan' && !d.rooms.some(r => !r.isAir)) return false;
+
+                // Amenities filter
+                for (let a of selectedAmenities) {
+                    if (!d.amenities.includes(a)) return false;
+                }
+
+                return true;
+            });
+
+            renderDormitories(filtered);
+        }
+
+        function renderDormitories(data = dormitories) {
+            const grid = document.getElementById('dormitoriesGrid');
+            document.getElementById('dormCount').innerText = data.length;
+            grid.innerHTML = '';
+
+            if (data.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-200">
+                        <i class="fa-solid fa-house-circle-xmark text-5xl text-slate-300 mb-3 block"></i>
+                        <p class="font-bold text-slate-700">ไม่พบหอพักตรงตามเงื่อนไขที่คุณเลือก</p>
+                        <p class="text-xs text-tsu-muted mt-1">ลองปรับเปลี่ยนตัวกรองค้นหา หรือกดรีเซ็ตตัวกรอง</p>
+                    </div>
+                `;
+                return;
+            }
+
+            data.forEach(d => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition duration-300 flex flex-col group";
+                card.innerHTML = `
+                    <div class="relative h-48 overflow-hidden bg-slate-100">
+                        <img src="${d.image}" alt="${d.name}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                        <span class="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-amber-300 text-[11px] font-extrabold px-2.5 py-1 rounded-full">
+                            <i class="fa-solid fa-graduation-cap mr-1"></i> ${d.campus === 'songkhla' ? 'วิทยาเขตสงขลา' : 'วิทยาเขตพัทลุง'}
+                        </span>
+                        <span class="absolute top-3 right-3 bg-white/90 text-slate-800 text-xs font-bold px-2 py-0.5 rounded-lg shadow">
+                            ⭐ ${d.rating}
+                        </span>
+                    </div>
+
+                    <div class="p-5 flex-grow flex flex-col justify-between space-y-4">
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base group-hover:text-tsu-blue transition">${d.name}</h3>
+                            <p class="text-xs text-tsu-muted mt-1 line-clamp-1">
+                                <i class="fa-solid fa-location-dot text-rose-500 mr-1"></i> ${d.address}
+                            </p>
+                            <div class="mt-2 flex items-center space-x-2 text-[11px] text-slate-600">
+                                <span class="bg-blue-50 text-tsu-blue font-semibold px-2 py-0.5 rounded-md">
+                                    <i class="fa-solid fa-walking mr-1"></i> ห่างประตู ม. ${d.distance} เมตร
+                                </span>
+                                <span class="bg-emerald-50 text-emerald-700 font-semibold px-2 py-0.5 rounded-md">
+                                    ว่าง ${d.availableRooms} ห้อง
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] text-slate-400 block">เริ่มต้น</span>
+                                <span class="text-lg font-extrabold text-tsu-deep">฿${d.price.toLocaleString()}</span>
+                                <span class="text-[10px] text-slate-500">/เดือน</span>
+                            </div>
+                            <button onclick="openDormModal('${d.id}')" class="px-4 py-2 bg-tsu-blue hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow transition flex items-center space-x-1">
+                                <span>ดูรายละเอียด</span>
+                                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function openDormModal(dormId) {
+            const dorm = dormitories.find(d => d.id === dormId);
+            if (!dorm) return;
+
+            selectedDormForBooking = dorm;
+
+            document.getElementById('modalCampusBadge').innerText = dorm.campus === 'songkhla' ? 'วิทยาเขตสงขลา' : 'วิทยาเขตพัทลุง';
+            document.getElementById('modalDormName').innerText = dorm.name;
+            document.getElementById('modalDormAddress').innerHTML = `<i class="fa-solid fa-location-dot text-amber-300 mr-1"></i> ${dorm.address}`;
+            document.getElementById('modalDormImage').src = dorm.image;
+            document.getElementById('modalDistance').innerText = `${dorm.distance} ม.`;
+            document.getElementById('modalRating').innerText = `⭐ ${dorm.rating} / 5.0`;
+            document.getElementById('modalAvailableRooms').innerText = `${dorm.availableRooms} ห้อง`;
+
+            // Amenities List
+            const amenContainer = document.getElementById('modalAmenitiesList');
+            amenContainer.innerHTML = '';
+            const amenMap = {
+                wifi: 'Wi-Fi ความเร็วสูง',
+                keycard: 'คีย์การ์ดเข้าออก',
+                parking: 'ที่จอดรถยนต์/มอเตอร์ไซค์',
+                cctv: 'กล้องวงจรปิด 24ชม.',
+                water_heater: 'เครื่องทำน้ำอุ่น',
+                elevator: 'ลิฟต์โดยสาร'
+            };
+            dorm.amenities.forEach(a => {
+                const tag = document.createElement('span');
+                tag.className = "bg-slate-100 text-slate-700 text-xs px-2.5 py-1 rounded-lg border border-slate-200 font-medium";
+                tag.innerText = `✓ ${amenMap[a] || a}`;
+                amenContainer.appendChild(tag);
+            });
+
+            // Room Options Radio Cards
+            const roomsContainer = document.getElementById('modalRoomOptions');
+            roomsContainer.innerHTML = '';
+            dorm.rooms.forEach((r, index) => {
+                if (index === 0) selectedRoomForBooking = r; // default select first
+
+                const rDiv = document.createElement('label');
+                rDiv.className = "block bg-slate-50 border border-slate-200 p-3.5 rounded-2xl cursor-pointer hover:border-tsu-blue transition";
+                rDiv.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <input type="radio" name="roomSelection" value="${r.id}" ${index === 0 ? 'checked' : ''} onchange="selectRoom('${r.id}')" class="accent-tsu-blue">
+                            <div>
+                                <p class="font-bold text-slate-800 text-sm">${r.name}</p>
+                                <span class="text-[10px] text-tsu-muted">เงินมัดจำประกันห้อง ฿${r.deposit.toLocaleString()}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-base font-extrabold text-tsu-blue">฿${r.rent.toLocaleString()}</span>
+                            <span class="text-[10px] text-slate-500 block">/เดือน</span>
+                        </div>
+                    </div>
+                `;
+                roomsContainer.appendChild(rDiv);
+            });
+
+            document.getElementById('dormDetailModal').classList.remove('hidden');
+        }
+
+        function selectRoom(roomId) {
+            if (!selectedDormForBooking) return;
+            selectedRoomForBooking = selectedDormForBooking.rooms.find(r => r.id === roomId);
+        }
+
+        function closeDormModal() {
+            document.getElementById('dormDetailModal').classList.add('hidden');
+        }
+
+        function proceedToBooking() {
+            if (!currentUser) {
+                closeDormModal();
+                openLoginModal();
+                Swal.fire({
+                    title: 'กรุณาเข้าสู่ระบบก่อน',
+                    text: 'คุณต้องเข้าสู่ระบบหรือสมัครสมาชิกก่อนดำเนินการจองหอพัก',
+                    icon: 'warning',
+                    confirmButtonText: 'ตกลง'
+                });
+                return;
+            }
+
+            closeDormModal();
+
+            // Populate Booking Modal
+            document.getElementById('summaryDormName').innerText = selectedDormForBooking.name;
+            document.getElementById('summaryRoomType').innerText = selectedRoomForBooking.name;
+            document.getElementById('summaryMonthlyRent').innerText = `฿${selectedRoomForBooking.rent.toLocaleString()}`;
+
+            document.getElementById('calcRent').innerText = `฿${selectedRoomForBooking.rent.toLocaleString()}`;
+            document.getElementById('calcDeposit').innerText = `฿${selectedRoomForBooking.deposit.toLocaleString()}`;
+            document.getElementById('calcGrandTotal').innerText = `฿${selectedRoomForBooking.deposit.toLocaleString()}`;
+
+            // Set default checkin date (tomorrow)
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('checkInDate').value = tomorrow.toISOString().split('T')[0];
+
+            document.getElementById('bookingModal').classList.remove('hidden');
+        }
+
+        function closeBookingModal() {
+            document.getElementById('bookingModal').classList.add('hidden');
+        }
+
+        function copyBankAcc(acc) {
+            const el = document.createElement('textarea');
+            el.value = acc;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+
+            Swal.fire({
+                title: 'คัดลอกสำเร็จ',
+                text: `เลขบัญชี ${acc} ถูกคัดลอกลงคลิปบอร์ดแล้ว`,
+                icon: 'success',
+                timer: 1500,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+
+        function previewSlip(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('slipPreviewImg').src = e.target.result;
+                    document.getElementById('slipPreviewBox').classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function submitBookingPayment() {
+            const slipInput = document.getElementById('slipInput');
+            if (!slipInput.files || slipInput.files.length === 0) {
+                Swal.fire({
+                    title: 'กรุณาอัปโหลดสลิป',
+                    text: 'โปรดแนบไฟล์หลักฐานการโอนเงินเพื่อยืนยันการจอง',
+                    icon: 'warning',
+                    confirmButtonText: 'รับทราบ'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'กำลังตรวจสอบการชำระเงิน...',
+                text: 'ระบบกำลังส่งข้อมูลไปยังเจ้าของหอพัก',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            setTimeout(() => {
+                const checkInDate = document.getElementById('checkInDate').value;
+                const newBooking = {
+                    id: `TXN-2026-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+                    dormId: selectedDormForBooking.id,
+                    dormName: selectedDormForBooking.name,
+                    campusText: selectedDormForBooking.campus === 'songkhla' ? 'วิทยาเขตสงขลา' : 'วิทยาเขตพัทลุง',
+                    roomName: selectedRoomForBooking.name,
+                    studentName: currentUser.name,
+                    studentPhone: currentUser.phone,
+                    amount: selectedRoomForBooking.deposit,
+                    status: 'pending', // Pending verification by Owner
+                    date: new Date().toISOString().split('T')[0],
+                    checkInDate: checkInDate,
+                    slipUploaded: true
+                };
+
+                bookings.unshift(newBooking);
+                closeBookingModal();
+
+                Swal.fire({
+                    title: 'ส่งหลักฐานการจองเรียบร้อย!',
+                    text: 'เจ้าของหอพักได้รับหลักฐานแล้ว จะดำเนินการตรวจสอบภายใน 24 ชม.',
+                    icon: 'success',
+                    confirmButtonText: 'ไปที่การจองของฉัน'
+                }).then(() => {
+                    navigateTo('my-bookings');
+                });
+            }, 1500);
+        }
+
+        function renderMyBookings() {
+            const container = document.getElementById('myBookingsContainer');
+            container.innerHTML = '';
+
+            if (bookings.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white p-8 rounded-2xl border border-slate-200 text-center">
+                        <i class="fa-solid fa-receipt text-4xl text-slate-300 mb-2 block"></i>
+                        <p class="font-bold text-slate-700">คุณยังไม่มีรายการจองหอพักในขณะนี้</p>
+                        <button onclick="navigateTo('search')" class="mt-3 px-4 py-2 bg-tsu-blue text-white rounded-xl text-xs font-bold shadow">
+                            ค้นหาหอพักเพื่อจอง
+                        </button>
+                    </div>
+                `;
+                return;
+            }
+
+            bookings.forEach(b => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between md:items-center gap-4";
+                
+                let statusBadge = '';
+                if (b.status === 'pending') {
+                    statusBadge = `<span class="bg-amber-100 text-amber-800 border border-amber-300 text-xs font-bold px-3 py-1 rounded-full"><i class="fa-solid fa-clock mr-1"></i> รอเจ้าของหอตรวจสอบมัดจำ</span>`;
+                } else if (b.status === 'confirmed') {
+                    statusBadge = `<span class="bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold px-3 py-1 rounded-full"><i class="fa-solid fa-circle-check mr-1"></i> ยืนยันแล้ว (ชำระมัดจำแล้ว)</span>`;
+                } else if (b.status === 'cancelled') {
+                    statusBadge = `<span class="bg-rose-100 text-rose-800 border border-rose-300 text-xs font-bold px-3 py-1 rounded-full"><i class="fa-solid fa-circle-xmark mr-1"></i> ยกเลิกการจองแล้ว</span>`;
+                }
+
+                card.innerHTML = `
+                    <div class="space-y-1">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-mono text-xs font-bold text-slate-500">รหัสจอง: ${b.id}</span>
+                            ${statusBadge}
+                        </div>
+                        <h3 class="font-bold text-slate-800 text-base">${b.dormName}</h3>
+                        <p class="text-xs text-tsu-muted"><i class="fa-solid fa-graduation-cap text-tsu-blue mr-1"></i> ${b.campusText} | ${b.roomName}</p>
+                        <p class="text-xs text-slate-600">วันที่ทำรายการ: ${b.date} | วันที่เข้าพัก: <span class="font-bold text-tsu-blue">${b.checkInDate}</span></p>
+                    </div>
+
+                    <div class="flex md:flex-col justify-between items-end gap-2 pt-3 md:pt-0 border-t md:border-0 border-slate-100">
+                        <div class="text-right">
+                            <span class="text-[10px] text-slate-400 block">มัดจำที่ชำระ</span>
+                            <span class="text-lg font-extrabold text-tsu-deep">฿${b.amount.toLocaleString()}</span>
+                        </div>
+
+                        ${b.status !== 'cancelled' ? `
+                            <button onclick="cancelBooking('${b.id}')" class="px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-xs font-bold transition">
+                                <i class="fa-solid fa-ban mr-1"></i> ยกเลิกการจอง
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function cancelBooking(bookingId) {
+            const b = bookings.find(x => x.id === bookingId);
+            if (!b) return;
+
+            Swal.fire({
+                title: 'ยืนยันการยกเลิกการจอง?',
+                text: `รหัสการจอง ${b.id} (${b.dormName}) โดยเงื่อนไขการคืนมัดจำจะถูกประมวลผลภายใน 3-5 วันทำการ`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'ยืนยันยกเลิกการจอง',
+                cancelButtonText: 'ย้อนกลับ'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    b.status = 'cancelled';
+                    renderMyBookings();
+                    Swal.fire('ยกเลิกเรียบร้อย', 'รายการจองของคุณถูกยกเลิกแล้ว', 'success');
+                }
+            });
+        }
+
+        function renderOwnerTable() {
+            const tbody = document.getElementById('ownerBookingsTable');
+            tbody.innerHTML = '';
+
+            let pendingCount = 0;
+            let confirmedCount = 0;
+            let revenueTotal = 0;
+
+            bookings.forEach(b => {
+                if (b.status === 'pending') pendingCount++;
+                if (b.status === 'confirmed') {
+                    confirmedCount++;
+                    revenueTotal += b.amount;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition";
+                tr.innerHTML = `
+                    <td class="p-4 font-mono font-bold text-slate-700">${b.id}</td>
+                    <td class="p-4">
+                        <p class="font-bold text-slate-800">${b.studentName}</p>
+                        <p class="text-[10px] text-tsu-muted">${b.studentPhone}</p>
+                    </td>
+                    <td class="p-4">
+                        <p class="font-bold text-slate-800">${b.dormName}</p>
+                        <p class="text-[10px] text-slate-500">${b.roomName}</p>
+                    </td>
+                    <td class="p-4 font-medium">${b.campusText}</td>
+                    <td class="p-4 font-bold text-tsu-deep">฿${b.amount.toLocaleString()}</td>
+                    <td class="p-4">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            b.status === 'pending' ? 'bg-amber-100 text-amber-800' :
+                            b.status === 'confirmed' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                        }">
+                            ${b.status === 'pending' ? 'รออนุมัติ' : b.status === 'confirmed' ? 'อนุมัติแล้ว' : 'ยกเลิก'}
+                        </span>
+                    </td>
+                    <td class="p-4 text-center">
+                        <button onclick="viewSlipMock()" class="text-xs text-tsu-blue font-bold hover:underline">
+                            <i class="fa-solid fa-eye mr-1"></i> ดูสลิป
+                        </button>
+                    </td>
+                    <td class="p-4 text-center">
+                        ${b.status === 'pending' ? `
+                            <div class="flex justify-center space-x-1">
+                                <button onclick="approveBooking('${b.id}')" class="px-2.5 py-1 bg-emerald-600 text-white rounded-lg text-[11px] font-bold shadow hover:bg-emerald-700">
+                                    อนุมัติ
+                                </button>
+                                <button onclick="rejectBooking('${b.id}')" class="px-2.5 py-1 bg-rose-600 text-white rounded-lg text-[11px] font-bold shadow hover:bg-rose-700">
+                                    ปฏิเสธ
+                                </button>
+                            </div>
+                        ` : '<span class="text-slate-400 text-[10px]">-</span>'}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('ownerPendingCount').innerText = pendingCount;
+            document.getElementById('ownerConfirmedCount').innerText = confirmedCount;
+            document.getElementById('ownerRevenueTotal').innerText = `฿${revenueTotal.toLocaleString()}`;
+        }
+
+        function viewSlipMock() {
+            Swal.fire({
+                title: 'หลักฐานการโอนเงิน (สลิป)',
+                text: 'สลิปได้รับการตรวจสอบความถูกต้องผ่านระบบสแกนสลิปแล้ว',
+                imageUrl: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=400&q=80',
+                imageWidth: 280,
+                imageAlt: 'Bank Slip',
+                confirmButtonText: 'ปิดหน้าต่าง'
+            });
+        }
+
+        function approveBooking(id) {
+            const b = bookings.find(x => x.id === id);
+            if (b) {
+                b.status = 'confirmed';
+                renderOwnerTable();
+                Swal.fire('อนุมัติสำเร็จ', 'ยืนยันการรับชำระเงินมัดจำเรียบร้อย', 'success');
+            }
+        }
+
+        function rejectBooking(id) {
+            const b = bookings.find(x => x.id === id);
+            if (b) {
+                b.status = 'cancelled';
+                renderOwnerTable();
+                Swal.fire('ปฏิเสธรายการ', 'ปฏิเสธหลักฐานสลิปการโอนเงินแล้ว', 'info');
+            }
+        }
+
+        function openAddDormModal() {
+            document.getElementById('addDormModal').classList.remove('hidden');
+        }
+
+        function closeAddDormModal() {
+            document.getElementById('addDormModal').classList.add('hidden');
+        }
+
+        function handleAddDormSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('newDormName').value;
+            const campus = document.getElementById('newDormCampus').value;
+            const price = parseInt(document.getElementById('newDormPrice').value);
+            const distance = parseInt(document.getElementById('newDormDistance').value);
+
+            const newDorm = {
+                id: `dorm-${dormitories.length + 1}`,
+                name: name,
+                campus: campus,
+                campusText: campus === 'songkhla' ? 'วิทยาเขตสงขลา' : 'วิทยาเขตพัทลุง',
+                address: `ใกล้มหาวิทยาลัยทักษิณ (${campus === 'songkhla' ? 'สงขลา' : 'พัทลุง'})`,
+                price: price,
+                maxPrice: price + 800,
+                distance: distance,
+                rating: 5.0,
+                availableRooms: 6,
+                image: 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80',
+                amenities: ['wifi', 'keycard', 'cctv'],
+                rooms: [
+                    { id: `r-${Date.now()}`, name: 'ห้องปรับอากาศ มาตรฐาน', rent: price, deposit: price, isAir: true }
+                ]
+            };
+
+            dormitories.unshift(newDorm);
+            renderDormitories();
+            closeAddDormModal();
+
+            Swal.fire('เพิ่มข้อมูลสำเร็จ', `เพิ่มหอพัก "${name}" เข้าสู่ระบบเรียบร้อย`, 'success');
+        }
+
+        let barChartInst = null;
+        let doughnutChartInst = null;
+
+        function initCharts() {
+            const ctx1 = document.getElementById('campusBarChart').getContext('2d');
+            barChartInst = new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.'],
+                    datasets: [
+                        {
+                            label: 'วิทยาเขตสงขลา',
+                            data: [12, 19, 25, 30, 45, 60, 55, 70, 85],
+                            backgroundColor: '#2563EB'
+                        },
+                        {
+                            label: 'วิทยาเขตพัทลุง',
+                            data: [8, 14, 18, 22, 35, 48, 42, 58, 68],
+                            backgroundColor: '#F59E0B'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById('roomDoughnutChart').getContext('2d');
+            doughnutChartInst = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['ห้องปรับอากาศ (Aircon)', 'ห้องพัดลม (Fan)'],
+                    datasets: [{
+                        data: [72, 28],
+                        backgroundColor: ['#0284C7', '#FEF08A']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        function renderAdminStats() {
+            document.getElementById('adminTotalBookings').innerText = bookings.length + 127;
+            const rev = bookings.reduce((sum, b) => sum + (b.status === 'confirmed' ? b.amount : 0), 537800);
+            document.getElementById('adminTotalRevenue').innerText = `฿${rev.toLocaleString()}`;
+        }
+
+        function exportReportCSV() {
+            let csv = 'ID,StudentName,DormName,Campus,Amount,Status,Date\n';
+            bookings.forEach(b => {
+                csv += `"${b.id}","${b.studentName}","${b.dormName}","${b.campusText}",${b.amount},"${b.status}","${b.date}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', `TSU_Dorm_Report_2026.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function openLoginModal() {
+            document.getElementById('loginModal').classList.remove('hidden');
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').classList.add('hidden');
+        }
+
+        function openRegisterModal() {
+            document.getElementById('registerModal').classList.remove('hidden');
+        }
+
+        function closeRegisterModal() {
+            document.getElementById('registerModal').classList.add('hidden');
+        }
+
+        function handleLoginSubmit(e) {
+            e.preventDefault();
+            const idCard = document.getElementById('loginIdCard').value.trim();
+            const phone = document.getElementById('loginPhone').value.trim();
+
+            if (idCard.length !== 13) {
+                Swal.fire('ข้อมูลไม่ถูกต้อง', 'กรุณากรอกเลขบัตรประชาชน 13 หลักให้ถูกต้อง', 'error');
+                return;
+            }
+
+            closeLoginModal();
+
+            // Store temporary user for OTP step
+            window.tempLogin = {
+                name: 'นายสมชาย ใจดี',
+                idCard: idCard,
+                phone: phone,
+                role: 'student'
+            };
+
+            document.getElementById('otpTargetPhone').innerText = maskPhone(phone);
+            document.getElementById('otpModal').classList.remove('hidden');
+            startOtpTimer();
+        }
+
+        let otpInterval = null;
+        function startOtpTimer() {
+            let count = 60;
+            document.getElementById('otpTimer').innerText = count;
+            clearInterval(otpInterval);
+            otpInterval = setInterval(() => {
+                count--;
+                document.getElementById('otpTimer').innerText = count;
+                if (count <= 0) clearInterval(otpInterval);
+            }, 1000);
+        }
+
+        function autoFillOTP() {
+            document.getElementById('otpInput').value = '849201';
+        }
+
+        function verifyOTP() {
+            const code = document.getElementById('otpInput').value.trim();
+            if (code.length !== 6) {
+                Swal.fire('รหัส OTP ไม่ถูกต้อง', 'กรุณากรอกรหัส OTP 6 หลัก', 'error');
+                return;
+            }
+
+            currentUser = window.tempLogin;
+            document.getElementById('otpModal').classList.add('hidden');
+            clearInterval(otpInterval);
+
+            updateUIState();
+
+            Swal.fire({
+                title: 'เข้าสู่ระบบสำเร็จ',
+                text: `ยินดีต้อนรับคุณ ${currentUser.name}`,
+                icon: 'success',
+                timer: 1800,
+                showConfirmButton: false
+            });
+        }
+
+        function handleRegisterSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('regFullName').value;
+            const idCard = document.getElementById('regIdCard').value;
+            const phone = document.getElementById('regPhone').value;
+
+            if (idCard.length !== 13) {
+                Swal.fire('ข้อผิดพลาด', 'เลขบัตรประชาชนต้องมี 13 หลัก', 'error');
+                return;
+            }
+
+            closeRegisterModal();
+
+            currentUser = {
+                name: name,
+                idCard: idCard,
+                phone: phone,
+                role: 'student'
+            };
+
+            updateUIState();
+
+            Swal.fire({
+                title: 'สมัครสมาชิกสำเร็จ!',
+                text: 'การสมัครของคุณเข้ารหัสป้องกันข้อมูลความปลอดภัย SHA-256 เรียบร้อย',
+                icon: 'success'
+            });
+        }
+
+        function logout() {
+            Swal.fire({
+                title: 'ยืนยันออกจากระบบ?',
+                text: 'คุณต้องการออกจากระบบการใช้งานใช่หรือไม่',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'ออกจากระบบ',
+                cancelButtonText: 'ยกเลิก'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    currentUser = null;
+                    updateUIState();
+                    navigateTo('search');
+                    Swal.fire('ออกจากระบบเรียบร้อย', '', 'info');
+                }
+            });
+        }
+
+        function updateUIState() {
+            const loggedOut = document.getElementById('loggedOutState');
+            const loggedIn = document.getElementById('loggedInState');
+
+            if (currentUser) {
+                loggedOut.classList.add('hidden');
+                loggedIn.classList.remove('hidden');
+                loggedIn.classList.add('flex');
+
+                document.getElementById('userNameDisplay').innerText = currentUser.name;
+                document.getElementById('userMaskedIdDisplay').innerText = maskIdCard(currentUser.idCard);
+                document.getElementById('userAvatarText').innerText = currentUser.name.substring(0, 2);
+            } else {
+                loggedOut.classList.remove('hidden');
+                loggedIn.classList.add('hidden');
+                loggedIn.classList.remove('flex');
+            }
+        }
+    </script>
+</body>
+</html>
